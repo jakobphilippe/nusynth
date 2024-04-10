@@ -1,237 +1,162 @@
-import pkg from '@rnbo/js';
+import pkg, { type Device } from '@rnbo/js';
 const { MIDIEvent } = pkg;
-import {WebMidi} from "webmidi";
+import { type Input, WebMidi } from 'webmidi';
 
-export function makeSliders(device) {
-  let pdiv = document.getElementById("rnbo-parameter-sliders");
-  let noParamLabel = document.getElementById("no-param-label");
-  // @ts-ignore
-  if (noParamLabel && device.numParameters > 0) pdiv.removeChild(noParamLabel);
+export function setupKeyboardMIDI(device: Device, context: AudioContext) {
+	const whiteKeyNoteNumbers = [60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77, 79, 81, 83, 84, 86, 88]; // MIDI note numbers for the white keys starting from C4 (middle C) until C7
+	const blackKeyNoteNumbers = [61, 63, 0, 66, 68, 0, 70, 0, 73, 75, 0, 78, 80, 0, 82, 0, 85, 87, 0]; // MIDI note numbers for the black keys (0 indicates no black key)
 
-  // This will allow us to ignore parameter update events while dragging the slider.
-  let isDraggingSlider = false;
-  let uiElements = {};
+	// Event listener for key press
+	document.addEventListener('keydown', (event) => {
+		context.resume();
+		const key = event.key.toUpperCase();
+		const whiteKeys = ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', "'"];
+		const blackKeys = ['W', 'E', '', 'T', 'Y', '', 'U', '', 'O', 'P', ''];
 
-  device.parameters.forEach(param => {
-    // Subpatchers also have params. If we want to expose top-level
-    // params only, the best way to determine if a parameter is top level
-    // or not is to exclude parameters with a '/' in them.
-    // You can uncomment the following line if you don't want to include subpatcher params
+		// Check if the pressed key is a white key
+		const whiteIndex = whiteKeys.indexOf(key);
+		if (whiteIndex !== -1) {
+			const mappedNote = whiteKeyNoteNumbers[whiteIndex];
+			const midiChannel = 0;
+			const velocity = 127; // Maximum velocity for key press
+			const noteOnMessage = [144 + midiChannel, mappedNote, velocity];
+			const noteOnEvent = new MIDIEvent(device.context.currentTime * 1000, 0, noteOnMessage);
+			device.scheduleEvent(noteOnEvent);
+		}
 
-    //if (param.id.includes("/")) return;
+		// Check if the pressed key is a black key
+		const blackIndex = blackKeys.indexOf(key);
+		if (blackIndex !== -1) {
+			const mappedNote = blackKeyNoteNumbers[blackIndex];
+			if (mappedNote !== 0) { // Skip keys with note number 0 (no black key)
+				const midiChannel = 0;
+				const velocity = 127; // Maximum velocity for key press
+				const noteOnMessage = [144 + midiChannel, mappedNote, velocity];
+				const noteOnEvent = new MIDIEvent(device.context.currentTime * 1000, 0, noteOnMessage);
+				device.scheduleEvent(noteOnEvent);
+			}
+		}
+	});
 
-    // Create a label, an input slider and a value display
-    let label = document.createElement("label");
-    let slider = document.createElement("input");
-    let text = document.createElement("input");
-    let sliderContainer = document.createElement("div");
-    sliderContainer.appendChild(label);
-    sliderContainer.appendChild(slider);
-    sliderContainer.appendChild(text);
+	// Event listener for key release
+	document.addEventListener('keyup', (event) => {
+		const key = event.key.toUpperCase();
+		const whiteKeys = ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', "'"];
+		const blackKeys = ['W', 'E', '', 'T', 'Y', '', 'U', '', 'O', 'P', ''];
 
-    // Add a name for the label
-    label.setAttribute("name", param.name);
-    label.setAttribute("for", param.name);
-    label.setAttribute("class", "param-label");
-    label.textContent = `${param.name}: `;
+		// Check if the released key is a white key
+		const whiteIndex = whiteKeys.indexOf(key);
+		if (whiteIndex !== -1) {
+			const mappedNote = whiteKeyNoteNumbers[whiteIndex];
+			const midiChannel = 0;
+			const noteOffMessage = [128 + midiChannel, mappedNote, 0];
+			const noteOffEvent = new MIDIEvent(device.context.currentTime * 1000, 0, noteOffMessage);
+			device.scheduleEvent(noteOffEvent);
+		}
 
-    // Make each slider reflect its parameter
-    slider.setAttribute("type", "range");
-    slider.setAttribute("class", "param-slider");
-    slider.setAttribute("id", param.id);
-    slider.setAttribute("name", param.name);
-    slider.setAttribute("min", param.min);
-    slider.setAttribute("max", param.max);
-    if (param.steps > 1) {    // @ts-ignore
-      slider.setAttribute("step", (param.max - param.min) / (param.steps - 1));
-    } else {    // @ts-ignore
-      slider.setAttribute("step", (param.max - param.min) / 1000.0);
-    }
-    slider.setAttribute("value", param.value);
-
-    // Make a settable text input display for the value
-    text.setAttribute("value", param.value.toFixed(1));
-    text.setAttribute("type", "text");
-
-    // Make each slider control its parameter
-    slider.addEventListener("pointerdown", () => {
-      isDraggingSlider = true;
-    });
-    slider.addEventListener("pointerup", () => {
-      isDraggingSlider = false;
-      slider.value = param.value;
-      text.value = param.value.toFixed(1);
-    });
-    slider.addEventListener("input", () => {
-      let value = Number.parseFloat(slider.value);
-      param.value = value;
-    });
-
-    // Make the text box input control the parameter value as well
-    text.addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter") {
-        let newValue = Number.parseFloat(text.value);
-        if (isNaN(newValue)) {
-          text.value = param.value;
-        } else {
-          newValue = Math.min(newValue, param.max);
-          newValue = Math.max(newValue, param.min);
-          // @ts-ignore
-          text.value = newValue;
-          param.value = newValue;
-        }
-      }
-    });
-
-    // Store the slider and text by name so we can access them later
-    // @ts-ignore
-    uiElements[param.id] = { slider, text };
-
-    // Add the slider element
-    // @ts-ignore
-    pdiv.appendChild(sliderContainer);
-  });
-
-  // Listen to parameter changes from the device
-  device.parameterChangeEvent.subscribe(param => {
-    if (!isDraggingSlider)
-      // @ts-ignore
-      uiElements[param.id].slider.value = param.value;
-    // @ts-ignore
-    uiElements[param.id].text.value = param.value.toFixed(1);
-  });
+		// Check if the released key is a black key
+		const blackIndex = blackKeys.indexOf(key);
+		if (blackIndex !== -1) {
+			const mappedNote = blackKeyNoteNumbers[blackIndex];
+			if (mappedNote !== 0) { // Skip keys with note number 0 (no black key)
+				const midiChannel = 0;
+				const noteOffMessage = [128 + midiChannel, mappedNote, 0];
+				const noteOffEvent = new MIDIEvent(device.context.currentTime * 1000, 0, noteOffMessage);
+				device.scheduleEvent(noteOffEvent);
+			}
+		}
+	});
 }
 
-export function makeMIDIKeyboard(device: Device) {
-  let mdiv = document.getElementById("rnbo-clickable-keyboard");
-  if (device.numMIDIInputPorts === 0) return;
+export function setupExternalMIDI(device: Device, context: AudioContext, inputName: string): Input | null {
+	const myInput = WebMidi.getInputByName(inputName);
+	if (!myInput) {
+		return null
+	}
+	myInput.addListener('noteon', (e) => {
+		context.resume();
+		let midiChannel = 0;
+		let note = e.note.number;
+		let velocity = e.rawValue;
 
-  // @ts-ignore
-  mdiv!.removeChild(document.getElementById("no-midi-label"));
+		// Format a MIDI message payload for a note on event
+		let noteOnMessage = [
+			144 + midiChannel, // Code for a note on: 10010000 & midi channel (0-15)
+			note, // MIDI Note
+			velocity // MIDI Velocity
+		];
 
-  const midiNotes = [49, 52, 56, 63];
-  midiNotes.forEach(note => {
-    const key = document.createElement("div");
-    const label = document.createElement("p");
-    label.textContent = String(note);
-    key.appendChild(label);
-    key.addEventListener("pointerdown", () => {
-      let midiChannel = 0;
+		// Format a MIDI message payload for a note off event
+		let noteOffMessage = [
+			128 + midiChannel, // Code for a note off: 10000000 & midi channel (0-15)
+			note, // MIDI Note
+			0 // MIDI Velocity
+		];
 
-      // Format a MIDI message paylaod, this constructs a MIDI on event
-      let noteOnMessage = [
-        144 + midiChannel, // Code for a note on: 10010000 & midi channel (0-15)
-        note, // MIDI Note
-        100 // MIDI Velocity
-      ];
+		let midiPort = 0;
+		let noteDurationMs = 250;
 
-      let noteOffMessage = [
-        128 + midiChannel, // Code for a note off: 10000000 & midi channel (0-15)
-        note, // MIDI Note
-        0 // MIDI Velocity
-      ];
+		// Schedule the note on event
+		// @ts-ignore
+		const noteOnEvent = new MIDIEvent(device.context.currentTime * 1000, midiPort, noteOnMessage);
+		device.scheduleEvent(noteOnEvent);
+	});
 
-      // Including rnbo.min.js (or the unminified rnbo.js) will add the RNBO object
-      // to the global namespace. This includes the TimeNow constant as well as
-      // the MIDIEvent constructor.
-      let midiPort = 0;
-      let noteDurationMs = 250;
+	myInput.addListener('noteoff', (e) => {
+		let midiChannel = 0;
+		let note = e.note.number;
 
-      // When scheduling an event to occur in the future, use the current audio context time
-      // multiplied by 1000 (converting seconds to milliseconds) for now.
-      // @ts-ignore
-      let noteOnEvent = new MIDIEvent(device.context.currentTime * 1000, midiPort, noteOnMessage);
-      // @ts-ignore
-      let noteOffEvent = new MIDIEvent(device.context.currentTime * 1000 + noteDurationMs, midiPort, noteOffMessage);
+		// Format a MIDI message payload for a note off event
+		let noteOffMessage = [
+			128 + midiChannel, // Code for a note off: 10000000 & midi channel (0-15)
+			note, // MIDI Note
+			0 // MIDI Velocity
+		];
 
-      device.scheduleEvent(noteOnEvent);
-      device.scheduleEvent(noteOffEvent);
+		let midiPort = 0;
 
-      key.classList.add("clicked");
-    });
+		// Schedule the note off event immediately
+		// @ts-ignore
+		let noteOffEvent = new MIDIEvent(device.context.currentTime * 1000, midiPort, noteOffMessage);
+		device.scheduleEvent(noteOffEvent);
+	});
 
-    key.addEventListener("pointerup", () => key.classList.remove("clicked"));
-    // @ts-ignore
-    mdiv.appendChild(key);
-  });
+	return myInput
 }
 
-export function setupExternalMIDI(device: Device, context: AudioContext) {
-  WebMidi
-    .enable()
-    .then(onEnabled)
-    .catch(err => alert(err));
+export function removeExternalMIDI(inputName: string) {
+	const myInput = WebMidi.getInputByName(inputName);
 
-  function onEnabled() {
-    const myInput = WebMidi.getInputByName("V49 Out");
-
-    console.log(myInput)
-
-    myInput!.addListener("noteon", e => {
-      context.resume();
-      let midiChannel = 0;
-      let note = e.note.number;
-      let velocity = e.rawValue;
-
-      // Format a MIDI message payload for a note on event
-      let noteOnMessage = [
-        144 + midiChannel, // Code for a note on: 10010000 & midi channel (0-15)
-        note, // MIDI Note
-        velocity // MIDI Velocity
-      ];
-
-      // Format a MIDI message payload for a note off event
-      let noteOffMessage = [
-        128 + midiChannel, // Code for a note off: 10000000 & midi channel (0-15)
-        note, // MIDI Note
-        0 // MIDI Velocity
-      ];
-
-      let midiPort = 0;
-      let noteDurationMs = 250;
-
-      // Schedule the note on event
-      // @ts-ignore
-      const noteOnEvent = new MIDIEvent(device.context.currentTime * 1000, midiPort, noteOnMessage);
-      device.scheduleEvent(noteOnEvent);
-    });
-
-    myInput.addListener("noteoff", e => {
-      let midiChannel = 0;
-      let note = e.note.number;
-
-      // Format a MIDI message payload for a note off event
-      let noteOffMessage = [
-        128 + midiChannel, // Code for a note off: 10000000 & midi channel (0-15)
-        note, // MIDI Note
-        0 // MIDI Velocity
-      ];
-
-      let midiPort = 0;
-
-      // Schedule the note off event immediately
-      // @ts-ignore
-      let noteOffEvent = new MIDIEvent(device.context.currentTime * 1000, midiPort, noteOffMessage);
-      device.scheduleEvent(noteOffEvent);
-    });
-  }
-
+	myInput!.removeListener('noteon');
+	myInput!.removeListener('noteoff');
 }
 
-export function darkMode() {
-  // On page load or when changing themes, best to add inline in `head` to avoid FOUC
-  if (localStorage.snyth_theme === 'dark' || (!('snyth_theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-    document.documentElement.classList.add('dark')
-  } else {
-    document.documentElement.classList.remove('dark')
-  }
+const NOTE_DURATION_MS = 250; // Duration of each note
 
-// // Whenever the user explicitly chooses light mode
-//   localStorage.theme = 'light'
-//
-// // Whenever the user explicitly chooses dark mode
-//   localStorage.theme = 'dark'
-//
-// // Whenever the user explicitly chooses to respect the OS preference
-//   localStorage.removeItem('theme')
+export function playNote(device: Device, context: AudioContext, note: number,) {
+		context.resume();
+		const midiChannel = 0;
+		const velocity = 100; // You can adjust the velocity as needed
+
+		// Format a MIDI message payload for a note on event
+		const noteOnMessage = [
+				144 + midiChannel, // Code for a note on: 10010000 & midi channel (0-15)
+				note, // MIDI Note
+				velocity // MIDI Velocity
+		];
+
+		// Format a MIDI message payload for a note off event
+		const noteOffMessage = [
+				128 + midiChannel, // Code for a note off: 10000000 & midi channel (0-15)
+				note, // MIDI Note
+				0 // MIDI Velocity
+		];
+
+		// Schedule the note on event
+		const noteOnEvent = new MIDIEvent(device.context.currentTime * 1000, 0, noteOnMessage);
+		device.scheduleEvent(noteOnEvent);
+
+		// Schedule the note off event after NOTE_DURATION_MS
+		const noteOffEvent = new MIDIEvent((device.context.currentTime + NOTE_DURATION_MS / 1000) * 1000, 0, noteOffMessage);
+		device.scheduleEvent(noteOffEvent);
 }
