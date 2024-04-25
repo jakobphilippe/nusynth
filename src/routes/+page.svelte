@@ -107,7 +107,7 @@
 <svelte:window on:keydown={windowKeydown} />
 
 <div
-	class="p-5 m-auto mt-28 bg-[#D3D6DA] border-4 border-gray-500 rounded shadow-[rgba(13,_38,_76,_0.19)_0px_9px_20px] w-fit min-w-[1471px] min-h-[676px]"
+	class="p-5 m-auto mt-20 bg-[#D3D6DA] border-4 border-gray-500 rounded shadow-[rgba(13,_38,_76,_0.19)_0px_9px_20px] w-fit min-w-[1471px] min-h-[676px]"
 >
 	<h1 class="text-5xl font-light mt-5 ml-10">
 		<span class="text-[#C8102E] font-bold">NU</span><span class="text-black">Synth</span>
