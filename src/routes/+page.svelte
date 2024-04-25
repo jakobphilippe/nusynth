@@ -160,9 +160,9 @@
 				I created NUSynth for my CS + Music Tech degree capstone project at Northeastern.
 				<br /><br />
 				I've been fascinated by the idea of a browser-based synthesizer, and RNBO by Cycling '74' made
-				it surprisingly simple to build one – allowing me to export Max patches to use in JS! I added a
-				random-walk generative component to "generate" the sound of the synthesizer when enabled - like a random LFO.
-				It's no $600 VST, missing stuff such as preset saving... etc, but it's a great way to explore and make unique sounds
+				it surprisingly simple to build one – allowing me to export Max patches to use in JS. I added a
+				random-walk gen component to "generate" the sound of the synthesizer when enabled - like a random LFO.
+				It's no $600 VST, missing stuff such as preset saving... etc, but it's a quick way to explore and make unique sounds
 				in the browser!
 				<br /><br />
 				Thanks to Anthony De Ritis, the prof. of the capstone course.
