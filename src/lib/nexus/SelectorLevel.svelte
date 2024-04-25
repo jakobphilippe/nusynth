@@ -6,7 +6,7 @@
 </script>
 
 {#if label !== ""}
-<p class="text-xl mt-2">{label}</p>
+	<p class="text-xl mt-2">{label}</p>
 {/if}
 <div class="flex flex-row space-x-4 items-center">
 	<div id="poly/{ID}/{dest}"></div>

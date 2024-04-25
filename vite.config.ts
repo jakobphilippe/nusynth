@@ -5,11 +5,11 @@ export default defineConfig({
 	plugins: [sveltekit()],
 	optimizeDeps: {
 		esbuildOptions: {
-				// Node.js global to browser globalThis
-				define: {
-						global: 'globalThis',
-				},
-		},
+			// Node.js global to browser globalThis
+			define: {
+				global: 'globalThis'
+			}
+		}
 	},
 	build: {
 		rollupOptions: {

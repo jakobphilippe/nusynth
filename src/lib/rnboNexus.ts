@@ -292,15 +292,28 @@ export async function rnboNexus(device: Device, context: AudioContext, patcher: 
 	genVolatility.colorize('fill', VISIBLE_FILL);
 	genVolatility.colorize('accent', ACCENT);
 
-	genVolatility.on('change', () => {
-		if (genToggle.state) {
-			updateGen(paramMap, runningFlags, {
-				volatility: genVolatility.value,
-				timeout: genTimeout.value,
-				driftSwitchChance: genChance.value
-			});
-		}
+	function debounce(func: any, wait: any) {
+		let timeout: any;
+		return function(...args: any) {
+			const context = this;
+			clearTimeout(timeout);
+			timeout = setTimeout(() => func.apply(context, args), wait);
+		};
+	}
 
+	// Apply debouncing to the updateGen function
+	const debouncedUpdateGen = debounce((paramMap: any, runningFlags: any, options: any) => {
+		if (genToggle.state) { // Check if the generator should be running
+			updateGen(paramMap, runningFlags, options);
+		}
+	}, 200); // Debounce for 200 milliseconds
+
+	genVolatility.on('change', () => {
+		debouncedUpdateGen(paramMap, runningFlags, {
+			volatility: genVolatility.value,
+			timeout: genTimeout.value,
+			driftSwitchChance: genChance.value
+		});
 	});
 
 	const genChance = new Nexus.Dial('#genChance', {
@@ -315,13 +328,11 @@ export async function rnboNexus(device: Device, context: AudioContext, patcher: 
 	genChance.colorize('accent', ACCENT);
 
 	genChance.on('change', () => {
-		if (genToggle.state) {
-			updateGen(paramMap, runningFlags, {
-				volatility: genVolatility.value,
-				timeout: genTimeout.value,
-				driftSwitchChance: genChance.value
-			});
-		}
+		debouncedUpdateGen(paramMap, runningFlags, {
+			volatility: genVolatility.value,
+			timeout: genTimeout.value,
+			driftSwitchChance: genChance.value
+		});
 	});
 
 	const genTimeout = new Nexus.Dial('#genTimeout', {
@@ -336,13 +347,11 @@ export async function rnboNexus(device: Device, context: AudioContext, patcher: 
 	genTimeout.colorize('accent', ACCENT);
 
 	genTimeout.on('change', () => {
-		if (genToggle.state) {
-			updateGen(paramMap, runningFlags, {
-				volatility: genVolatility.value,
-				timeout: genTimeout.value,
-				driftSwitchChance: genChance.value
-			});
-		}
+		debouncedUpdateGen(paramMap, runningFlags, {
+			volatility: genVolatility.value,
+			timeout: genTimeout.value,
+			driftSwitchChance: genChance.value
+		});
 	});
 
 	const genToggle = new Nexus.Toggle('#genToggle');

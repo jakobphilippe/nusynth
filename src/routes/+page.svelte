@@ -21,7 +21,7 @@
 	let currentMIDI: Input | null;
 	let isSynthPage: boolean = true;
 	let params = {};
-  let isVisible = true;
+	let isVisible = true;
 
 	onMount(() => {
 		const patchExportURL = '/kob.export.json';
@@ -76,8 +76,8 @@
 		};
 
 		setTimeout(() => {
-      isVisible = false;
-    }, 10000);
+			isVisible = false;
+		}, 10000);
 	});
 
 	let midiInputs: string[] = [];
@@ -148,7 +148,8 @@
 				</select>
 			</div>
 		</div>
-		<p transition:fade={{ duration: 1000 }} class="font-light mt-1 ml-10 {isVisible ? '' : 'hide'}">Press Q for more info</p>
+		<p class="font-light mt-1 ml-10 {isVisible ? '' : 'hide'}" transition:fade={{ duration: 1000 }}>Press Q for more
+			info</p>
 	</div>
 	<div class="{!isSynthPage ? '' : 'hidden'}">
 		<div class="mt-3 ml-10 w-[700px]">
@@ -156,20 +157,22 @@
 				By Jakob Philippe
 			</h1>
 			<p class="mt-6">Information</p>
-			<p id="p-font" class="mt-3">
+			<p class="mt-3" id="p-font">
 				I created NUSynth for my CS + Music Tech degree capstone project at Northeastern.
 				<br /><br />
 				I've been fascinated by the idea of a browser-based synthesizer, and RNBO by Cycling '74' made
 				it surprisingly simple to build one – allowing me to export Max patches to use in JS. I added a
 				random-walk gen component to "generate" the sound of the synthesizer when enabled - like a random LFO.
-				It's no $600 VST, missing stuff such as preset saving... etc, but it's a quick way to explore and make unique sounds
+				It's no $600 VST, missing stuff such as preset saving... etc, but it's a quick way to explore and make unique
+				sounds
 				in the browser!
 				<br /><br />
 				Thanks to Anthony De Ritis, the prof. of the capstone course.
 			</p>
 			<p class="mt-6">Instructions</p>
-			<p id="p-font" class="mt-3">
-				Use keys a & w thru ' & p to use the virtual midi keyboard, or plug in your own and select it from the dropdown on the bottom right.
+			<p class="mt-3" id="p-font">
+				Use keys a & w thru ' & p to use the virtual midi keyboard, or plug in your own and select it from the dropdown
+				on the bottom right.
 				<br /><br />
 				<a class="underline" href="https://github.com/jakobphilippe/nusynth">GitHub</a>
 			</p>
@@ -178,7 +181,7 @@
 </div>
 
 <style>
-  .hide {
-    opacity: 0;
-  }
+    .hide {
+        opacity: 0;
+    }
 </style>
