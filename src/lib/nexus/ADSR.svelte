@@ -5,7 +5,7 @@
 		<div id="poly/adsr/attack"></div>
 		<div id="poly/adsr/attack/number"></div>
 	</div>
-	<p>Decay</p>
+	<p>Delay</p>
 	<div class="flex flex-row space-x-2 items-center">
 		<div id="poly/adsr/delay"></div>
 		<div id="poly/adsr/delay/number"></div>
